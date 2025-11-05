@@ -13,7 +13,15 @@ from glob import glob
 from tqdm import tqdm
 
 
+# putting raw hyperspectral cube, white reference file and dark reference file paths into variables below
+# globs
+#pattern for raw cube headers
 raw_glob = 
+# white reference
 white_path =
 dark_path =
-output_dir = 
+output_dir = "data/calibrated"
+# makes a directory in which to store calibrated data
+os.makedirs(output_dir, exist_ok = True)
+# small number to avoid division by zero
+eps = 1e-9
