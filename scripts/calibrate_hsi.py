@@ -13,15 +13,18 @@ from glob import glob
 from tqdm import tqdm
 
 
-# putting raw hyperspectral cube, white reference file and dark reference file paths into variables below
+
 # globs
-#pattern for raw cube headers
-raw_glob = 
-# white reference
-white_path =
-dark_path =
-output_dir = "data/calibrated"
-# makes a directory in which to store calibrated data
-os.makedirs(output_dir, exist_ok = True)
+# pattern to match for raw cube headers
+raw_glob = "datasets/raw/raw.hdr"
+# pattern to match for white reference headers
+white_path = "datasets/white/whiteReference.hdr"
+# pattern to match for dark reference headers
+dark_path = "datasets/dark/darkReference.hdr"
+# directory in which to store calibrated images
+output_dir = "datasets/calibrated"
+
 # small number to avoid division by zero
 eps = 1e-9
+
+# an ENVI cube is a 3D data sctucture (hence cube) used to process and visualise images with multiple spectral bands
