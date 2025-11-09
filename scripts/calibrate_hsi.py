@@ -1,4 +1,4 @@
-# preprocessing step 1
+# data preprocessing step 1
 # calibrate hyperspectral cubes using white and dark reference images
 
 import os
