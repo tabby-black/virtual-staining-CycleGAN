@@ -115,6 +115,7 @@ for raw_hdr in sorted(glob(raw_glob)):
     calibrated_cube = numerator / denominator
     # clipping to a sensible range
     calibrated_cube = np.clip(calibrated_cube, 0, 1)
+    # please don't delete my codespace
 
 
     # BAND REDUCTION
