@@ -18,15 +18,16 @@ from spectral import io as spio
 from spectral import save_image
 # glob is a module that provides tools to find path names matching specified patterns that follow Unix shell rules
 from glob import glob
-
+# shutil allows files to be moved around between directories
+import shutil
 
 
 # glob
 # pattern to match for raw cube headers
 raw_glob = "datasets/raw/*.hdr"
 
-# directory in which to store calibrated images
-output_dir = "datasets/calibrated"
+# directory in which to store calibrated and reduced images
+output_dir = "datasets/preprocessed"
 
 
 # an ENVI cube is a 3D data structure (hence cube) used to process and visualise images with multiple spectral bands
@@ -93,6 +94,7 @@ def reduce_spectral_dimensions(intensity_array, wavelengths, n=3):
 
 
 # go through each raw hyperspectral file in order
+# spectral Python always loads cubes via the header, not via the raw binary file directly
 for raw_hdr in sorted(glob(raw_glob)):
     # load the correct references for this raw hdr
 
@@ -118,23 +120,39 @@ for raw_hdr in sorted(glob(raw_glob)):
     # please don't delete my codespace
 
 
+    # TO ADD IN HERE - delete /datasets/white and /datasets/dark now that calibration using these reference images has finished?
+
     # BAND REDUCTION
     band_reduced_cube = reduce_spectral_dimensions(calibrated_cube, raw_wavelengths, n=3)
 
 
 
     # save calibrated_cube as ENVI float32 cube in datasets/calibrated folder
+    # saves both updated .hdr file and preprocessed hyperspectral image
     # Example:
-    # raw_hdr = "/datasets/raw/P1_ROI03_raw.hdr"
-    # os.path.basename(raw_hdr) = "P1_ROI03_raw.hdr"
-    # os.path.splitext(os.path.basename(raw_hdr)) = ("P1_ROI03_raw", ".hdr")
-    # base = "P1_ROI03_raw"
+    # raw_hdr = "/datasets/raw/P1_ROI_3_C01_T_raw.hdr"
+    # os.path.basename(raw_hdr) = "P1_ROI_3_C01_T_raw.hdr"
+    # os.path.splitext(os.path.basename(raw_hdr)) = ("P1_ROI_3_C01_T_raw", ".hdr")
+    # base = "P1_ROI_3_C01_T_raw"
+
+    # TO ADD IN HERE - change metadata eg. number of bands in .hdr file before saving
+
     base = os.path.splitext(os.path.basename(raw_hdr))[0]
-    output_hdr = os.path.join(output_dir, base + "_calibrated_reduced.hdr")
+    output_hdr = os.path.join(output_dir, base + "_preprocessed.hdr")
     # save calibrated cube to output_hdr
     # use same interleave as original cube's metadate to avoid format mismatch
     interleave = raw_cube_metadata.metadata.get('interleave', 'bill')
     save_image(output_hdr, calibrated_cube.astype(np.float32), dtype=np.float32, interleave=interleave, ext='', force=True)
+
+
+
+# TO ADD IN HERE - THEN SPLIT CALIBRATED IMAGES BETWEEN TRAIN AND TEST DATASETS
+# move hyperspectral tumor images into trainA
+shutil.move("/datasets/preprocessed/P1_ROI_01_C01_T_raw_preprocessed.hdr", "/datasets/trainA/")
+# move hyperspectral non-tumor images into trainA
+# move hyperspectral tumor images into testA
+# move hyperspectral non-tumor images into testA
+
 
 print("Data calibration and band reduction complete!")
 print("Ready for patching.")
