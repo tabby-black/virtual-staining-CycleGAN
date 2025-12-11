@@ -6,7 +6,7 @@ import os
 import glob
 
 from PIL import Image
-from itertools import product
+#from itertools import product
 
 # patch hyperspectral images
 def patch_hsi(hdr_path):

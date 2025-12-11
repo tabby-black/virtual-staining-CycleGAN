@@ -120,7 +120,9 @@ for raw_hdr in sorted(glob(raw_glob)):
     # please don't delete my codespace
 
 
-    # TO ADD IN HERE - delete /datasets/white and /datasets/dark now that calibration using these reference images has finished?
+    # delete /datasets/white and /datasets/dark now that calibration using these reference images has finished
+    os.remove("/datasets/white")
+    os.remove("/datasets/dark")
 
     # BAND REDUCTION
     band_reduced_cube = reduce_spectral_dimensions(calibrated_cube, raw_wavelengths, n=3)
@@ -1140,7 +1142,7 @@ shutil.move("/datasets/preprocessed/P8_ROI_03_C11_T_raw_preprocessed", "/dataset
 shutil.move("/datasets/preprocessed/P8_ROI_03_C12_T_raw_preprocessed.hdr", "/datasets/testA/")
 shutil.move("/datasets/preprocessed/P8_ROI_03_C12_T_raw_preprocessed", "/datasets/testA/")
 
-
+os.remove("/datasets/preprocessed")
 
 # move rgb tumor images into trainB
 shutil.move("/datasets/rgb/P1_ROI_01_C01_T_rgb.png", "/datasets/trainB/")
@@ -1674,6 +1676,7 @@ shutil.move("/datasets/rgb/P8_ROI_03_C10_T_rgb.png", "/datasets/testB/")
 shutil.move("/datasets/rgb/P8_ROI_03_C11_T_rgb.png", "/datasets/testB/")
 shutil.move("/datasets/rgb/P8_ROI_03_C12_T_rgb.png", "/datasets/testB/")
 
+os.remove("/datasets/rgb")
 
 
 print("Data calibration and band reduction complete!")
