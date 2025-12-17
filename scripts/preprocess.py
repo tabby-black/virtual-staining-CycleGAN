@@ -1,13 +1,18 @@
-# data preprocessing step 1
+# data preprocessing step 1: calibration
 # calibrate hyperspectral cubes using white and dark reference images
 
-# data preprocessing step 2
+# data preprocessing step 2: band reduction
 # generate spectrally reduced HS images by averaging spectral bands of adjacent neighbouring bands
 # use spectral window of 3 neighbours - apart from the last 4 bands which will form a group since 826 doesn't divide by 3
 # reduce original 826 bands to 275
 # dimension reduction also slightly decreases the presence of white Gaussian noise
-
 # each band corresponds to a narrow wavelength range
+
+# data preprocessing step 3: image registration
+# roughly align hyperspectral image with corresponding rgb image - useful for evaluation purposes
+# rgb image is template
+
+# data preprocessing step 4: split images between train and test sets
 
 
 import os
@@ -66,7 +71,9 @@ def load_hyperspectral_cube(hdr_path):
     # loads binary data from paired .dat file
     # array.shape = (height, width, spectral_channels)
     cube_metadata = spio.envi.open(hdr_path)
+    # no pixel data has been loaded at this point - only the framework for it
     # specifically load array with float values for calculations
+    # this loads the actual cube
     hs_data = cube_metadata.load().astype(np.float32)
     wavelengths = cube_metadata.bands.centers
     return hs_data, wavelengths, cube_metadata
@@ -99,7 +106,7 @@ def reduce_spectral_dimensions(intensity_array, wavelengths, n=3):
     return band_reduced_cube, wavelength_reduced
 
 # helper function for image registration
-def image_registration(rgb_image, hsi_cube):
+def register_hsi_image(rgb_image, hsi_cube):
     # rgb image: H_rgb x W_rgb x 3
     rgb = np.asarray(rgb_image).astype(np.float32)
     # hyperspectral cube: H x W x B (B = 275)
@@ -191,7 +198,7 @@ for raw_hdr in sorted(glob(raw_glob)):
     band_reduced_cube = reduce_spectral_dimensions(calibrated_cube, raw_wavelengths, n=3)
 
     # save calibrated_cube as ENVI float32 cube in datasets/calibrated folder
-    # saves both updated .hdr file and preprocessed hyperspectral image
+    # saves both updated .hdr file and corresponding preprocessed hyperspectral image
     # Example:
     # raw_hdr = "/datasets/raw/P1_ROI_3_C01_T_raw.hdr"
     # os.path.basename(raw_hdr) = "P1_ROI_3_C01_T_raw.hdr"
@@ -217,24 +224,38 @@ for raw_hdr in sorted(glob(raw_glob)):
 # pattern to match for preprocessed cube headers
 preprocessed_hdr_glob = "datasets/preprocessed/*.hdr"
 # pattern to match for preprocessed cubes
-preprocessed_cube_glob = "datasets/preprocessed/*_reduced"
+preprocessed_cube_glob = "datasets/preprocessed/*_preprocessed"
 # pattern to match for rgb images
 rgb_glob = "datasets/rgb/*.png"
+
 
 # sorted sorts the list lexographically
 hdr_files = sorted(glob(preprocessed_hdr_glob))
 cube_files = sorted(glob(preprocessed_cube_glob))
 rgb_files = sorted(glob(rgb_glob))
 
+
 for hdr, cube, rgb in zip(hdr_files, cube_files, rgb_files):
-    hsi_cube = load_hyperspectral_cube(hdr)
-    registered_hsi_cube = image_registration(rgb, hsi_cube)
-    # need to save a hdr file and cube file for this registered cube in place of the original hdr and cube files
-    # don't override originals - save replacing _reduced with _preprocessed suffix (so don't need to change code below)
+    hsi_cube, hsi_wavelengths, hsi_metadata = load_hyperspectral_cube(hdr)
+    registered_hsi_cube = register_hsi_image(rgb, hsi_cube)
+
+
+    # TO ADD IN HERE - change metadata eg. number of bands in .hdr file before saving
+
+    # store registered cube, overriding non-registered cube 
+    base = os.path.basename(cube)
+    output_cube = os.path.join(output_dir, base)
+    # save registered cube to output_cube (same name as before registration so code below still works)
+    interleave = hsi_metadata.metadata.get('interleave', 'bill')
+    save_image(output_cube, registered_hsi_cube.astype(np.float32), dtype=np.float32, interleave=interleave, ext='', force=True)
+
+    # since the original .hdr file is already saved, I need to amend it to point at the new registered corresponding hsi, as well as change H, W, B as necessary
 
 
 
-# SPLIT IMAGES BETWEEN TRAINING AND TEST SETS
+
+
+# SPLIT IMAGES BETWEEN TRAIN AND TEST SETS
 
 # move hyperspectral tumor images into trainA
 shutil.move("/datasets/preprocessed/P1_ROI_01_C01_T_raw_preprocessed.hdr", "/datasets/trainA/")
@@ -1767,5 +1788,5 @@ shutil.move("/datasets/rgb/P8_ROI_03_C12_T_rgb.png", "/datasets/testB/")
 os.remove("/datasets/rgb")
 
 
-print("Data calibration and band reduction complete!")
+print("Data calibration, band reduction, image registration and image split complete!")
 print("Ready for patching.")
