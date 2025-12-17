@@ -13,6 +13,7 @@
 import os
 import numpy as np
 import scipy
+from scipy.ndimage import affine_transform
 # spectral is a module for processing hyperspectral image data eg. reading, displaying, manipulating
 from spectral import io as spio
 from spectral import save_image
@@ -20,6 +21,10 @@ from spectral import save_image
 from glob import glob
 # shutil allows files to be moved around between directories
 import shutil
+# imreg_dft is for image registration - uses Discrete Fourier Transform
+import imreg_dft
+from sklearn.decomposition import PCA
+
 
 
 # glob
@@ -146,7 +151,79 @@ for raw_hdr in sorted(glob(raw_glob)):
 
 
 
-# split preprocessed images between training and test datasets
+
+# IMAGE REGISTRATION
+# needs to happen after hyperpectral images have been preprocessed, before images are split into train and test datasets
+
+# globs
+# pattern to match for preprocessed cube headers
+preprocessed_hdr_glob = "datasets/preprocessed/*.hdr"
+# pattern to match for preprocessed cubes
+preprocessed_cube_glob = "datasets/preprocessed/*_raw_preprocessed"
+# pattern to match for rgb images
+rgb_glob = "datasets/rgb/*.png"
+
+#for preprocessed_hdr in sorted(glob(preprocessed_hdr_glob)):
+
+# write the code to register a pair of images and then work out how to apply to globs
+
+def image_registration(rgb_image, hsi_cube):
+    # rgb image: H_rgb x W_rgb x 3
+    rgb = np.asarray(rgb_image).astype(np.float32)
+    # hyperspectral cube: H x W x B (B = 275)
+    hsi = np.asarray(hsi_cube).astype(np.float32)
+
+    # create a 2d registration image from HSI using PCA
+    H, W, B = hsi.shape
+    # reshape(pixels, bands)
+    hsi_2d = hsi.reshape(-1, B)
+    pca = PCA(n_components=1)
+    hsi_pca1 = pca.fit_transform(hsi_2d).reshape(H,W)
+    #normalise for stability
+    hsi_pca1 = (hsi_pca1 - hsi_pca1.min()) / (hsi_pca1.ptp() + 1e-8)
+
+    # convert rgb image to grayscale
+    # red channel + green channel + blue channel
+    # weights are different because red, green and blue do not contribute equally to brightness
+    rgb_gray = 0.2989 * rgb[..., 0] + 0.5870 * rgb[..., 1] + 0.1140 * rgb[..., 2]
+    # normalise to scale between [0, 1] and for stability
+    # ptp = peak-to-peak = range of values in rgb image array
+    rgb_gray = (rgb_gray - rgb_gray.min()) / (rgb_gray.ptp() + 1e-8)
+
+    # estimate similarity transform
+    result = imreg_dft.similarity(rgb_gray, hsi_pca1)
+
+    # build affine transformation matrix using estimated parameters
+    theta = np.deg2rad(result['angle'])
+    scale = result['scale']
+    tx, ty = result['tvec']
+    affine = np.array([
+        [scale * np.cos(theta), -scale * np.sin(theta), tx],
+        [scale * np.sin(theta), scale * np.cos(theta),  ty],
+        [0,                     0,                       1]
+    ])
+
+    # apply transform to all HSI bands
+    H_rgb, W_rgb = rgb_gray.shape
+    # registered hsi image must be same number of pixels as rgb image
+    # scipy uses inverse mapping
+    inv_affine = np.linalg.inv(affine)
+    registered_hsi = np.zeros((H_rgb, W_rgb, B), dtype=np.float32)
+    # iterate over all bands in hsi image to transform each one
+    for b in range(B):
+        registered_hsi[..., b] = affine_transform(
+            hsi[..., b],
+            inv_affine[:2, :2],
+            offset=inv_affine[:2, 2],
+            output_shape=(H_rgb, W_rgb),
+            #bilinear interpolation
+            order=1
+        )
+
+    # registered_hsi is now aligned to rgb, same spatial shape, spectrally consistent across bands
+
+
+# SPLIT IMAGES BETWEEN TRAINING AND TEST SETS
 
 # move hyperspectral tumor images into trainA
 shutil.move("/datasets/preprocessed/P1_ROI_01_C01_T_raw_preprocessed.hdr", "/datasets/trainA/")
