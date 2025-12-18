@@ -205,16 +205,19 @@ for raw_hdr in sorted(glob(raw_glob)):
     # os.path.splitext(os.path.basename(raw_hdr)) = ("P1_ROI_3_C01_T_raw", ".hdr")
     # base = "P1_ROI_3_C01_T_raw"
 
-    # TO ADD IN HERE - change metadata eg. number of bands in .hdr file before saving
+    # change number of bands in metadata before saving new .hdr and cube files
+    reduced_metadata = raw_cube_metadata.copy()
+    reduced_metadata['bands'] = str(band_reduced_cube.shape[2])
+
 
     base = os.path.splitext(os.path.basename(raw_hdr))[0]
-    output_hdr = os.path.join(output_dir, base + "_reduced.hdr")
+    output_hdr = os.path.join(output_dir, base + "_preprocessed.hdr")
     # save calibrated cube to output_hdr
     # use same interleave as original cube's metadate to avoid format mismatch
-    interleave = raw_cube_metadata.metadata.get('interleave', 'bill')
-    save_image(output_hdr, calibrated_cube.astype(np.float32), dtype=np.float32, interleave=interleave, ext='', force=True)
 
-
+    # is this definitely right that it is using the raw cube interleave? I suppose this hasn't changed
+    interleave = reduced_metadata.metadata.get('interleave', 'bill')
+    save_image(output_hdr, band_reduced_cube.astype(np.float32), dtype=np.float32, interleave=interleave, metadata=reduced_metadata, ext='', force=True)
 
 
 # IMAGE REGISTRATION
@@ -240,18 +243,21 @@ for hdr, cube, rgb in zip(hdr_files, cube_files, rgb_files):
     registered_hsi_cube = register_hsi_image(rgb, hsi_cube)
 
 
-    # TO ADD IN HERE - change metadata eg. number of bands in .hdr file before saving
+    # change H, W, B in metadata before saving new .hdr and cube files
+    registered_metadata = hsi_metadata.copy()
+    H, W, B = registered_hsi_cube.shape
+    registered_metadata['lines'] = str(H)
+    registered_metadata['samples'] = str(W)
+    registered_metadata['bands'] = str(B)
 
     # store registered cube, overriding non-registered cube 
     base = os.path.basename(cube)
-    output_cube = os.path.join(output_dir, base)
+    output_hdr = os.path.join(output_dir, base + ".hdr")
     # save registered cube to output_cube (same name as before registration so code below still works)
     interleave = hsi_metadata.metadata.get('interleave', 'bill')
-    save_image(output_cube, registered_hsi_cube.astype(np.float32), dtype=np.float32, interleave=interleave, ext='', force=True)
+    save_image(output_hdr, registered_hsi_cube.astype(np.float32), dtype=np.float32, interleave=interleave, metadata=hsi_metadata, ext='', force=True)
 
-    # since the original .hdr file is already saved, I need to amend it to point at the new registered corresponding hsi, as well as change H, W, B as necessary
-
-
+    
 
 
 
