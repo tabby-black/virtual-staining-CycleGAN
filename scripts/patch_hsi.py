@@ -13,6 +13,7 @@ def patch_hsi(hdr_path):
     # load hyperspectral cube
     img = open_image(hdr_path).load
     H, W, B = img.shape
+    patch_metadata = img.metadata.copy()
 
     dirname = os.path.dirname(hdr_path)
     basename = os.path.splitext(os.path.basename(hdr_path))[0]
@@ -25,10 +26,14 @@ def patch_hsi(hdr_path):
         "bottom_right": img[H//2:H,   W//2:W, :]
     }
 
+    # change H and W in metadata before saving new hdr and cube files
+    patch_metadata['lines'] = str(H//2)
+    patch_metadata['samples'] = str(W//2)
+
     # save the 4 patches with the correct metadata
     for key, patch in patches.items():
         out_hdr = os.path.join(dirname, f"{basename}_{key}.hdr")
-        envi.save_image(out_hdr, patch.astype(np.float32), dtype=np.float32, force=True, interleave='bsq')
+        envi.save_image(out_hdr, patch.astype(np.float32), dtype=np.float32, force=True, interleave='bsq', metadata=patch_metadata)
 
     # remove the original full image
     os.remove(hdr_path)
