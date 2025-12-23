@@ -9,7 +9,7 @@ import torch.distributed as dist
 import os
 from sklearn import PCA
 
-# TODO: adapt this function so hyperspectral data can also be detected and converted into a numpy image array for visualisation
+# adapted this function so hyperspectral data can also be detected and converted into a numpy image array for visualisation
 def tensor2im(input_image, imtype=np.uint8):
     """ "Converts a Tensor array into a numpy image array.
     If input_image is hyperspectral (C >3), PPCA is applied for visualisation only.
@@ -49,7 +49,7 @@ def tensor2im(input_image, imtype=np.uint8):
         elif image_numpy.shape[0] == 1:  # grayscale to RGB
             image_numpy = np.tile(image_numpy, (3, 1, 1))
         image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0  # post-processing: tranpose and scaling
-        
+
     else:  # if it is a numpy array, do nothing
         image_numpy = input_image
     return image_numpy.astype(imtype)
