@@ -10,6 +10,9 @@ import os
 from sklearn import PCA
 
 # adapted this function so hyperspectral data can also be detected and converted into a numpy image array for visualisation
+
+# TODO: make sure PCA is only applied to each image once
+
 def tensor2im(input_image, imtype=np.uint8):
     """ "Converts a Tensor array into a numpy image array.
     If input_image is hyperspectral (C >3), PPCA is applied for visualisation only.
