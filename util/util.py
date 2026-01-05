@@ -15,7 +15,7 @@ from sklearn import PCA
 
 def tensor2im(input_image, imtype=np.uint8):
     """ "Converts a Tensor array into a numpy image array.
-    If input_image is hyperspectral (C >3), PPCA is applied for visualisation only.
+    If input_image is hyperspectral (C >3), PCA is applied for visualisation only.
 
     Parameters:
         input_image (tensor) --  the input image tensor array

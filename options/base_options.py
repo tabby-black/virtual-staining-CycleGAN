@@ -29,10 +29,8 @@ class BaseOptions:
 
         # changed these - either be 3 for rgb or specific number of bands B per image for hyperspectral
         # rgb_input and hsi_output are not currently used
-        parser.add_argument("--rgb_input_nc", type=int, default=3, help="# of input image channels for RGB: 3")
-        parser.add_argument("--rgb_output_nc", type=int, default=3, help="# of output image channels for RGB: 3")
-        parser.add_argument("--hsi_input_nc", type=int, default=275, help="# of input image channels for hyperspectral: 275")
-        parser.add_argument("--hsi_output_nc", type=int, default=275, help="# of output image channels for hyperspectral: 275")
+        parser.add_argument("--output_nc", type=int, default=3, help="# of output image channels for RGB: 3")
+        parser.add_argument("--input_nc", type=int, default=275, help="# of input image channels for hyperspectral: 275")
         
 
         parser.add_argument("--ngf", type=int, default=64, help="# of gen filters in the last conv layer")
